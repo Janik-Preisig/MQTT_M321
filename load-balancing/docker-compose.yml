@@ -1,0 +1,62 @@
+services:
+  web-a:
+    build:
+      context: ./backend
+    container_name: lb-web-a
+    environment:
+      SERVER_ID: web-a
+      RESPONSE_DELAY_MS: 150
+      JITTER_MS: 60
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2).read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web-b:
+    build:
+      context: ./backend
+    container_name: lb-web-b
+    environment:
+      SERVER_ID: web-b
+      RESPONSE_DELAY_MS: 650
+      JITTER_MS: 120
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2).read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web-c:
+    build:
+      context: ./backend
+    container_name: lb-web-c
+    environment:
+      SERVER_ID: web-c
+      RESPONSE_DELAY_MS: 1200
+      JITTER_MS: 180
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2).read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  load-balancer:
+    image: nginx:1.27-alpine
+    container_name: lb-nginx
+    depends_on:
+      web-a:
+        condition: service_healthy
+      web-b:
+        condition: service_healthy
+      web-c:
+        condition: service_healthy
+    ports:
+      - "${LOAD_BALANCER_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

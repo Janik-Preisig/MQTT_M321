@@ -96,6 +96,9 @@ if (-not $grafanaReady) {
     throw "[test] Fehler: Grafana API ist nicht erreichbar."
 }
 
+Write-Host "[test] Setze Grafana Admin-Passwort..."
+Invoke-Compose -ComposeArgs @("exec", "-T", "grafana", "grafana", "cli", "admin", "reset-admin-password", "admin")
+
 Write-Host "[test] Prüfe provisionierte Grafana-Datenquelle..."
 $datasourceJson = & curl.exe -fsS -u admin:admin "http://localhost:$grafanaPort/api/datasources/uid/mqtt"
 if ($LASTEXITCODE -ne 0) {
@@ -106,4 +109,4 @@ if (($datasourceJson -join "`n") -notmatch "grafana-mqtt-datasource") {
     throw "[test] Fehler: MQTT-Datenquelle wurde nicht gefunden."
 }
 
-Write-Host "[test] Alle Container-Migrationstests erfolgreich."
+Write-Host "[test] Alle Container-Integrationstests erfolgreich."

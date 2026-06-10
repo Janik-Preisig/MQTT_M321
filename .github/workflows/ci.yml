@@ -52,6 +52,29 @@ jobs:
       - name: Run MQTT stack integration test
         run: bash tests/test-mqtt-stack.sh
 
+      - name: Validate Load Balancing Docker Compose
+        run: docker compose -f load-balancing/docker-compose.yml config --quiet
+
+      - name: Build Load Balancing Docker images
+        run: docker compose -f load-balancing/docker-compose.yml build
+
+      - name: Run Load Balancing smoke test
+        run: |
+          cd load-balancing
+          docker compose up -d --build
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health; then
+              break
+            fi
+            sleep 2
+          done
+          sh scripts/request-loop.sh http://localhost:8080/ 5 0.1 | tee /tmp/load-balancing-output.txt
+          grep -E "web-a|web-b|web-c" /tmp/load-balancing-output.txt
+
+      - name: Stop Load Balancing stack
+        if: always()
+        run: docker compose -f load-balancing/docker-compose.yml down -v --remove-orphans
+
       - name: Stop stack
         if: always()
         run: docker compose down -v --remove-orphans
