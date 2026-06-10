@@ -80,6 +80,9 @@ for i in $(seq 1 60); do
   sleep 1
 done
 
+echo "[test] Setze Grafana Admin-Passwort..."
+$COMPOSE exec -T grafana grafana cli admin reset-admin-password admin
+
 echo "[test] Prüfe provisionierte Grafana-Datenquelle..."
 DATASOURCE_JSON="$(curl -fsS -u admin:admin "http://localhost:${GRAFANA_PORT}/api/datasources/uid/mqtt")"
 if ! printf '%s\n' "$DATASOURCE_JSON" | grep -q "grafana-mqtt-datasource"; then
@@ -88,4 +91,4 @@ if ! printf '%s\n' "$DATASOURCE_JSON" | grep -q "grafana-mqtt-datasource"; then
   exit 1
 fi
 
-echo "[test] Alle Container-Migrationstests erfolgreich."
+echo "[test] Alle Container-Integrationstests erfolgreich."
