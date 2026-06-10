@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Build and integration test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Show tool versions
+        run: |
+          docker --version
+          docker compose version
+          java -version
+          mvn --version
+
+      - name: Check repository text rules
+        run: |
+          bad_char="$(printf '\303\237')"
+          if grep -RIl --exclude-dir=.git --exclude-dir=target --exclude='*.png' "$bad_char" .; then
+            echo "Fehler: Repository enthaelt ein verbotenes Eszett-Zeichen."
+            exit 1
+          fi
+
+      - name: Java unit tests
+        run: mvn -f java-sensoren/pom.xml test
+
+      - name: Validate Docker Compose
+        run: docker compose config --quiet
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Run MQTT stack integration test
+        run: bash tests/test-mqtt-stack.sh
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v --remove-orphans
