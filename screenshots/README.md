@@ -4,7 +4,7 @@ Diese Datei zeigt die Abgabe-Screenshots direkt im Markdown. Die Bilder belegen 
 
 ## 1. Docker Container
 
-`docker-ps.png` zeigt den gestarteten Mosquitto-Container mit den MQTT-Ports `1883` und `9001`.
+`docker-ps.png` zeigt die gestarteten Container `mosquitto`, `bash-sensoren`, `java-sensoren` und `grafana`. Beim Mosquitto-Container sind die MQTT-Ports `1883` und `9001` sichtbar.
 
 ![Docker ps](docker-ps.png)
 
@@ -34,7 +34,7 @@ Diese Datei zeigt die Abgabe-Screenshots direkt im Markdown. Die Bilder belegen 
 
 ## 6. Grafana MQTT Datasource
 
-`grafana-datasource.png` zeigt die selbst konfigurierte MQTT-Datenquelle in Grafana mit der URI `tcp://localhost:1883`.
+`grafana-datasource.png` zeigt die selbst konfigurierte MQTT-Datenquelle in Grafana mit der URI `tcp://mosquitto:1883`.
 
 ![Grafana Datasource](grafana-datasource.png)
 
