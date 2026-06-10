@@ -193,7 +193,13 @@ Benutzername: admin
 Passwort: admin
 ```
 
-Zusätzlich ist anonymes Lesen aktiviert, damit die Demo ohne Login sichtbar ist.
+Wichtig: Melde dich wirklich mit `admin` / `admin` an. Nur als Admin siehst du links `Connections` und darunter `Data sources`. Wenn du nur `Home`, `Starred`, `Dashboards` und `Alerting` siehst, bist du nicht als Admin angemeldet.
+
+Direkter Login-Link:
+
+```text
+http://localhost:3001/login
+```
 
 ## Grafana-Provisioning
 
@@ -211,6 +217,20 @@ Die Dateien liegen hier:
 grafana/provisioning/datasources/mqtt.yml
 grafana/provisioning/dashboards/smarthome.yml
 grafana/dashboards/smarthome-mqtt.json
+```
+
+Datasource in Grafana ansehen:
+
+```text
+Connections
+Data sources
+MQTT
+```
+
+Die Datasource muss diese URI enthalten:
+
+```text
+tcp://mosquitto:1883
 ```
 
 ## MQTT manuell testen

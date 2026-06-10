@@ -57,6 +57,16 @@ Benutzername: admin
 Passwort: admin
 ```
 
+Nur als Admin sind die Menüpunkte `Connections` und `Data sources` sichtbar. Wenn diese Menüpunkte fehlen, öffne direkt `http://localhost:3001/login` und melde dich mit `admin` / `admin` an.
+
+Datasource in der Oberfläche:
+
+```text
+Connections
+Data sources
+MQTT
+```
+
 ## Prüfung
 
 Datasource per API prüfen:
