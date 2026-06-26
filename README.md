@@ -302,3 +302,4 @@ Der Test baut den Stack, prüft MQTT direkt, prüft Bash-Topics, prüft Java-Top
 - Java-Daten werden in einem zweiten Timeline-Panel angezeigt.
 - Testplan und Testprotokoll liegen in `docs/testplan.md`.
 - Screenshots für die Abgabe liegen in `screenshots/`.
+# MQTT_M321
