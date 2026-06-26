@@ -9,6 +9,8 @@ Sparing-Partner: Janik Preisig
 
 Dieses Repository enthält eine lauffähige, containerisierte Smart-Home-Demo. Mehrere Bash-basierte Sensoren und mehrere Java-basierte Sensoren senden Messwerte an einen Mosquitto MQTT-Broker. Grafana visualisiert die Daten über eine selbst konfigurierte MQTT-Datenquelle in zwei getrennten Panels.
 
+Zusätzlich enthält der Stack ein Container-Monitoring mit Prometheus, CAdvisor und Alertmanager. Damit sind Container-Metriken, Prometheus-Targets und Prometheus-Alerts direkt in der Live-Abnahme prüfbar.
+
 Die Lösung ist ab GitHub-Repo reproduzierbar:
 
 ```bash
@@ -41,6 +43,10 @@ bash/r3                     java/r3
 | `bash-sensoren` | eigenes Image aus `bash-sensoren/Dockerfile` | Drei Bash-Sensoren | kein Host-Port |
 | `java-sensoren` | eigenes Image aus `java-sensoren/Dockerfile` | Drei Java-Sensoren mit Subscriber | kein Host-Port |
 | `grafana` | `grafana/grafana:11.5.2` | Visualisierung | `3001` auf dem Host |
+| `prometheus` | `prom/prometheus` | Metriken sammeln und Alerts auswerten | `9090` |
+| `alertmanager` | `prom/alertmanager` | Prometheus-Alerts anzeigen | `9093` |
+| `cadvisor` | `gcr.io/cadvisor/cadvisor` | Container-Metriken bereitstellen | `18080` auf dem Host, intern `8080` |
+| `demo1`, `demo2` | `prom/node-exporter` | Demo-Targets für Prometheus | kein Host-Port |
 
 Der Grafana-Port kann bei Bedarf geändert werden:
 
@@ -206,6 +212,7 @@ http://localhost:3001/login
 Grafana wird beim Start automatisch vorbereitet:
 
 - MQTT-Datenquelle `MQTT` mit UID `mqtt`
+- Prometheus-Datenquelle `Prometheus` mit UID `prometheus`
 - Broker-URI `tcp://mosquitto:1883`
 - Dashboard `Smart Home MQTT`
 - Panel `Bash Sensoren Timeline` für `bash/r1`, `bash/r2`, `bash/r3`
@@ -215,6 +222,7 @@ Die Dateien liegen hier:
 
 ```text
 grafana/provisioning/datasources/mqtt.yml
+grafana/provisioning/datasources/prometheus.yml
 grafana/provisioning/dashboards/smarthome.yml
 grafana/dashboards/smarthome-mqtt.json
 ```
@@ -231,6 +239,39 @@ Die Datasource muss diese URI enthalten:
 
 ```text
 tcp://mosquitto:1883
+```
+
+## Prometheus, CAdvisor und Alerting
+
+Die Monitoring-Dokumentation mit Vorgehensweise, Zusammenspiel, Alert-Regeln, Testplan und Fazit liegt in [docs/prometheus-cadvisor-alerting.md](docs/prometheus-cadvisor-alerting.md).
+
+Wichtige Oberflächen:
+
+```text
+Prometheus Targets: http://localhost:9090/targets
+Prometheus Alerts:  http://localhost:9090/alerts
+Alertmanager:       http://localhost:9093/#/alerts
+CAdvisor:           http://localhost:18080
+```
+
+Prometheus scrapt diese Jobs:
+
+| Job | Targets |
+| --- | --- |
+| `prometheus` | `prometheus:9090` |
+| `cadvisor` | `cadvisor:8080` |
+| `node-exporter-demo` | `demo1:9100`, `demo2:9100` |
+
+Live-Test für einen funktionierenden Alert:
+
+```bash
+docker compose stop cadvisor
+```
+
+Nach ca. 30 Sekunden muss in `http://localhost:9090/alerts` der Alert `CAdvisorTargetDown` als `firing` sichtbar sein. Danach CAdvisor wieder starten:
+
+```bash
+docker compose start cadvisor
 ```
 
 ## MQTT manuell testen
@@ -298,8 +339,13 @@ Der Test baut den Stack, prüft MQTT direkt, prüft Bash-Topics, prüft Java-Top
 - Mosquitto ist über `1883` und `9001` erreichbar.
 - Grafana installiert das MQTT-Plugin automatisch.
 - Grafana provisioniert Datenquelle und Dashboard automatisch.
+- Prometheus, CAdvisor und Alertmanager sind in `docker-compose.yml` integriert.
+- Prometheus scrapt CAdvisor und Demo-Targets.
+- Prometheus-Alerts sind in `prom_conf/alerts.yaml` definiert.
+- Der Alert `CAdvisorTargetDown` kann live mit `docker compose stop cadvisor` ausgelöst werden.
 - Bash-Daten werden in einem eigenen Timeline-Panel angezeigt.
 - Java-Daten werden in einem zweiten Timeline-Panel angezeigt.
 - Testplan und Testprotokoll liegen in `docs/testplan.md`.
+- Monitoring-Doku und persönliches Fazit liegen in `docs/prometheus-cadvisor-alerting.md`.
 - Screenshots für die Abgabe liegen in `screenshots/`.
 # MQTT_M321

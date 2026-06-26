@@ -10,55 +10,97 @@ services:
       - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
-    healthcheck:
-      test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -t healthcheck/mosquitto -m ok"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    networks:
+      - m321-sensors
 
   grafana:
     image: grafana/grafana:11.5.2
     container_name: grafana
     restart: unless-stopped
-    depends_on:
-      mosquitto:
-        condition: service_healthy
     ports:
       - "${GRAFANA_PORT:-3001}:3000"
     environment:
       GF_INSTALL_PLUGINS: grafana-mqtt-datasource
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - m321-sensors
 
   bash-sensoren:
     build:
       context: ./bash-sensoren
-    container_name: bash-sensoren
-    restart: unless-stopped
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    environment:
-      BROKER_HOST: mosquitto
-      BROKER_PORT: 1883
+    networks:
+      - m321-sensors
 
   java-sensoren:
     build:
       context: ./java-sensoren
-    container_name: java-sensoren
+    networks:
+      - m321-sensors
+
+  demo1:
+    image: prom/node-exporter:v1.7.0
+    container_name: demo1
+    networks:
+      - m321-sensors
+
+  demo2:
+    image: prom/node-exporter:v1.7.0
+    container_name: demo2
+    networks:
+      - m321-sensors
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
     restart: unless-stopped
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    environment:
-      MQTT_BROKER: tcp://mosquitto:1883
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --web.enable-lifecycle
+    volumes:
+      - ./prom_conf/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./prom_conf/alerts.yaml:/etc/prometheus/alerts.yaml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - m321-sensors
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yaml
+    volumes:
+      - ./prom_conf/alertmanager.yaml:/etc/alertmanager/alertmanager.yaml:ro
+    networks:
+      - m321-sensors
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - "18080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - m321-sensors
+    privileged: true
 
 volumes:
   mosquitto-data:
   mosquitto-log:
   grafana-data:
+  prometheus-data:
+
+networks:
+  m321-sensors:

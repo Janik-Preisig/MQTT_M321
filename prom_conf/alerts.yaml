@@ -1,0 +1,32 @@
+groups:
+  - name: smart-home-container-alerts
+    rules:
+      - alert: CAdvisorTargetDown
+        expr: up{job="cadvisor"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "CAdvisor ist nicht erreichbar"
+          description: "Prometheus kann CAdvisor seit mindestens 30 Sekunden nicht scrapen. Container-Metriken fehlen."
+
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus Target ist down"
+          description: "Das Target {{ $labels.job }} / {{ $labels.instance }} ist seit mindestens 30 Sekunden nicht erreichbar."
+
+      - alert: ContainerHighCpuUsage
+        expr: |
+          sum by (id) (
+            rate(container_cpu_usage_seconds_total{id!="/"}[2m])
+          ) > 0.80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Hohe CPU-Auslastung im Container"
+          description: "Container oder CGroup {{ $labels.id }} nutzt seit mindestens 2 Minuten mehr als 80 Prozent eines CPU-Kerns."
