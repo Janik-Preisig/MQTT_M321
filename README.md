@@ -262,16 +262,16 @@ Prometheus scrapt diese Jobs:
 | `cadvisor` | `cadvisor:8080` |
 | `node-exporter-demo` | `demo1:9100`, `demo2:9100` |
 
-Live-Test für einen funktionierenden Alert:
+Live-Test für den geforderten Node-Alert:
 
 ```bash
-docker compose stop cadvisor
+docker compose stop demo1
 ```
 
-Nach ca. 30 Sekunden muss in `http://localhost:9090/alerts` der Alert `CAdvisorTargetDown` als `firing` sichtbar sein. Danach CAdvisor wieder starten:
+Nach ca. 1 Minute muss in `http://localhost:9090/alerts` der Alert `NodeDown` als `firing` sichtbar sein. Danach den Node wieder starten:
 
 ```bash
-docker compose start cadvisor
+docker compose start demo1
 ```
 
 ## MQTT manuell testen
@@ -342,7 +342,8 @@ Der Test baut den Stack, prüft MQTT direkt, prüft Bash-Topics, prüft Java-Top
 - Prometheus, CAdvisor und Alertmanager sind in `docker-compose.yml` integriert.
 - Prometheus scrapt CAdvisor und Demo-Targets.
 - Prometheus-Alerts sind in `prom_conf/alerts.yaml` definiert.
-- Der Alert `CAdvisorTargetDown` kann live mit `docker compose stop cadvisor` ausgelöst werden.
+- Der Alert `NodeDown` kann live mit `docker compose stop demo1` ausgelöst werden.
+- Der Alert `ContainerNotResponding` prüft über `container_last_seen`, ob Container/CGroups länger als 1 Minute nicht reagiert haben.
 - Bash-Daten werden in einem eigenen Timeline-Panel angezeigt.
 - Java-Daten werden in einem zweiten Timeline-Panel angezeigt.
 - Testplan und Testprotokoll liegen in `docs/testplan.md`.

@@ -37,7 +37,7 @@ Die Tests prüfen, ob die Migration in Container vollständig funktioniert und o
 | Java Commands | `java/commands` mit `status`, `pause`, `resume`, `stop` |
 | MQTT Direkt | Topic `test/direct`, Nachricht `hello` |
 | Prometheus | Jobs `prometheus`, `cadvisor`, `node-exporter-demo` |
-| Alerting | Alert `CAdvisorTargetDown` |
+| Alerting | Alerts `NodeDown`, `ContainerNotResponding`, `CAdvisorTargetDown` |
 
 ## Testfälle
 
@@ -56,9 +56,10 @@ Die Tests prüfen, ob die Migration in Container vollständig funktioniert und o
 | T11 | Neustart | `docker compose restart` ausführen | Services starten wieder und Sensoren senden erneut. |
 | T12 | Prometheus Config | `docker compose config --quiet` und Prometheus-Targets prüfen | Compose ist gültig; Jobs `prometheus`, `cadvisor`, `node-exporter-demo` sind sichtbar. |
 | T13 | CAdvisor Metriken | PromQL `container_cpu_usage_seconds_total{job="cadvisor"}` ausführen | Prometheus liefert Container-Metriken von CAdvisor. |
-| T14 | Prometheus Alert | `docker compose stop cadvisor` ausführen und `http://localhost:9090/alerts` öffnen | `CAdvisorTargetDown` wechselt nach ca. 30 Sekunden auf `firing`. |
+| T14 | Node-Alert | `docker compose stop demo1` ausführen und `http://localhost:9090/alerts` öffnen | `NodeDown` wechselt nach ca. 1 Minute auf `firing`. |
 | T15 | Alertmanager | `http://localhost:9093/#/alerts` öffnen | Der von Prometheus ausgelöste Alert ist im Alertmanager sichtbar. |
-| T16 | Alert Recovery | `docker compose start cadvisor` ausführen | CAdvisor wird wieder `UP`, der Alert löst sich nach kurzer Zeit auf. |
+| T16 | Container-Alert | PromQL-Regel `time() - container_last_seen{job="cadvisor", id!="/"} > 60` prüfen | Der Alert `ContainerNotResponding` ist für Container/CGroups definiert, die länger als 1 Minute nicht mehr gesehen wurden. |
+| T17 | Alert Recovery | `docker compose start demo1` ausführen | Der Node wird wieder `UP`, der Alert löst sich nach kurzer Zeit auf. |
 
 ## Automatisierter Test
 
@@ -89,7 +90,7 @@ Die Prometheus-/Alerting-Tests T12 bis T16 werden bewusst manuell dokumentiert, 
 
 ## Manuelle Zusatztests
 
-### T12 bis T16 Monitoring und Alerting prüfen
+### T12 bis T17 Monitoring und Alerting prüfen
 
 Prometheus Targets öffnen:
 
@@ -108,18 +109,18 @@ container_cpu_usage_seconds_total{job="cadvisor"}
 Alert auslösen:
 
 ```bash
-docker compose stop cadvisor
+docker compose stop demo1
 ```
 
-Erwartung: Nach ca. 30 Sekunden steht `CAdvisorTargetDown` unter `http://localhost:9090/alerts` auf `firing`. Unter `http://localhost:9093/#/alerts` ist derselbe Alert im Alertmanager sichtbar.
+Erwartung: Nach ca. 1 Minute steht `NodeDown` unter `http://localhost:9090/alerts` auf `firing`. Unter `http://localhost:9093/#/alerts` ist derselbe Alert im Alertmanager sichtbar.
 
 Alert wieder auflösen:
 
 ```bash
-docker compose start cadvisor
+docker compose start demo1
 ```
 
-Erwartung: CAdvisor wird wieder `UP`, der Alert verschwindet nach kurzer Zeit aus der aktiven Liste.
+Erwartung: Der Node wird wieder `UP`, der Alert verschwindet nach kurzer Zeit aus der aktiven Liste.
 
 ### T10 Dashboard prüfen
 
@@ -157,9 +158,10 @@ Erwartung: Nach dem Neustart sind alle Services wieder aktiv und MQTT-Nachrichte
 | T11 | bestanden | Nach `docker compose restart` sind alle vier Services wieder `Up`; Subscribe auf `#` empfängt wieder Bash- und Java-Werte. |
 | T12 | bestanden | Prometheus API zeigt `prometheus`, `cadvisor`, `demo1` und `demo2` als `UP`. |
 | T13 | bestanden | PromQL `container_cpu_usage_seconds_total{job="cadvisor"}` liefert CAdvisor-Metriken. |
-| T14 | bestanden | Nach `docker compose stop cadvisor` ist `CAdvisorTargetDown` in Prometheus `firing`. |
-| T15 | bestanden | Alertmanager API zeigt `CAdvisorTargetDown` mit Status `active`. |
-| T16 | bestanden | Nach `docker compose start cadvisor` startet CAdvisor wieder und kann erneut gescrapt werden. |
+| T14 | bestanden | Nach `docker compose stop demo1` ist `NodeDown` nach ca. 1 Minute in Prometheus `firing`. |
+| T15 | bestanden | Alertmanager API zeigt `NodeDown` mit Status `active`. |
+| T16 | bestanden | Alert-Regel `ContainerNotResponding` ist über `container_last_seen` definiert und prüft Container/CGroups, die länger als 1 Minute nicht gesehen wurden. |
+| T17 | bestanden | Nach `docker compose start demo1` startet der Node wieder und kann erneut gescrapt werden. |
 
 ## Auszug aus dem automatisierten Testlauf
 
@@ -199,4 +201,4 @@ java/r2 397.00
 
 Die Container-Migration ist erfolgreich, wenn alle automatisierten Tests bestehen und im Dashboard beide Sensorgruppen getrennt sichtbar sind. Fehler in einem Teilbereich werden über Container-Logs, MQTT-Subscribe und Grafana API einzeln eingegrenzt.
 
-Das Monitoring gilt als erfolgreich, wenn Prometheus CAdvisor scrapt, Container-Metriken abfragbar sind und der Alert `CAdvisorTargetDown` in Prometheus sowie Alertmanager live ausgelöst und wieder aufgelöst werden kann.
+Das Monitoring gilt als erfolgreich, wenn Prometheus CAdvisor scrapt, Container-Metriken abfragbar sind, `NodeDown` nach 1 Minute Ausfall auslöst und `ContainerNotResponding` Container/CGroups erkennt, die länger als 1 Minute nicht von CAdvisor gesehen wurden.

@@ -64,10 +64,10 @@ Prometheus-Targets öffnen:
 http://localhost:9090/targets
 ```
 
-Prometheus-Alert live auslösen:
+Node-Alert live auslösen:
 
 ```bash
-docker compose stop cadvisor
+docker compose stop demo1
 ```
 
 Alert prüfen:
@@ -77,10 +77,10 @@ http://localhost:9090/alerts
 http://localhost:9093/#/alerts
 ```
 
-CAdvisor wieder starten:
+Node wieder starten:
 
 ```bash
-docker compose start cadvisor
+docker compose start demo1
 ```
 
 Grafana öffnen:
@@ -101,9 +101,9 @@ http://localhost:3001
 8. Grafana öffnen und Dashboard `Smart Home MQTT` zeigen.
 9. Prometheus Targets unter `http://localhost:9090/targets` zeigen.
 10. CAdvisor-Metriken mit PromQL `container_cpu_usage_seconds_total{job="cadvisor"}` zeigen.
-11. Alert `CAdvisorTargetDown` mit `docker compose stop cadvisor` auslösen.
+11. Alert `NodeDown` mit `docker compose stop demo1` auslösen.
 12. Alert in Prometheus und Alertmanager zeigen.
-13. CAdvisor mit `docker compose start cadvisor` wieder starten.
+13. Node mit `docker compose start demo1` wieder starten.
 14. Testplan und Testprotokoll in `docs/testplan.md` zeigen.
 15. Persönliches Fazit in `docs/prometheus-cadvisor-alerting.md` zeigen.
 
@@ -134,6 +134,6 @@ http://localhost:3001
 | Vorgehensweise Prometheus inkl. Alerts und CAdvisor Installation & Konfiguration | `docs/prometheus-cadvisor-alerting.md`, `docker-compose.yml`, `prom_conf/` |
 | Zusammenspiel CAdvisor, Prometheus inkl. Alerts und Grafana erklärt und illustriert | Architekturdiagramm in `docs/prometheus-cadvisor-alerting.md` |
 | Container-Monitoring funktioniert in Cloud/Live-Abnahme | `docker compose up -d --build`, `http://localhost:9090/targets`, PromQL `container_cpu_usage_seconds_total{job="cadvisor"}` |
-| Prometheus-Alerts funktionieren | Live-Test `docker compose stop cadvisor`, Alert `CAdvisorTargetDown` |
+| Prometheus-Alerts funktionieren | Live-Test `docker compose stop demo1`, Alert `NodeDown`; Container-Alert `ContainerNotResponding` in `prom_conf/alerts.yaml` |
 | Aussagekräftiger Testplan und Testprotokoll für Alerting | T12 bis T16 in `docs/testplan.md` |
 | Konstruktives persönliches Fazit | Abschnitt `Persoenliches Fazit` in `docs/prometheus-cadvisor-alerting.md` |

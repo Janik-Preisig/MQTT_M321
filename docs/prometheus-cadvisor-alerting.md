@@ -89,14 +89,14 @@ Die Alert-Regeln liegen in `prom_conf/alerts.yaml`.
 
 | Alert | Ausloeser | Live-Test |
 | --- | --- | --- |
-| `CAdvisorTargetDown` | `up{job="cadvisor"} == 0` fuer 30 Sekunden | `docker compose stop cadvisor` |
-| `PrometheusTargetDown` | irgendein Target ist 30 Sekunden down | z.B. `docker compose stop demo1` |
-| `ContainerHighCpuUsage` | ein Container nutzt 2 Minuten lang mehr als 80 Prozent eines CPU-Kerns | optional mit Lasttest |
+| `NodeDown` | `up{job="node-exporter-demo"} == 0` fuer 1 Minute | `docker compose stop demo1` |
+| `ContainerNotResponding` | `time() - container_last_seen{job="cadvisor", id!="/"} > 60` | indirekt ueber fehlende CAdvisor-Aktualisierung pruefbar |
+| `CAdvisorTargetDown` | `up{job="cadvisor"} == 0` fuer 1 Minute | `docker compose stop cadvisor` |
 
-Live-Abnahme fuer Alerting:
+Live-Abnahme fuer den geforderten Node-Alert:
 
 ```bash
-docker compose stop cadvisor
+docker compose stop demo1
 ```
 
 Danach in Prometheus oeffnen:
@@ -105,7 +105,7 @@ Danach in Prometheus oeffnen:
 http://localhost:9090/alerts
 ```
 
-Nach ca. 30 Sekunden muss `CAdvisorTargetDown` von `pending` auf `firing` wechseln. Im Alertmanager ist der Alert ebenfalls sichtbar:
+Nach ca. 1 Minute muss `NodeDown` von `pending` auf `firing` wechseln. Im Alertmanager ist der Alert ebenfalls sichtbar:
 
 ```text
 http://localhost:9093/#/alerts
@@ -114,7 +114,7 @@ http://localhost:9093/#/alerts
 Nachweis, dass sich der Alert wieder aufloest:
 
 ```bash
-docker compose start cadvisor
+docker compose start demo1
 ```
 
 Nach dem naechsten Scrape steht das Target wieder auf `UP`, und der Alert verschwindet nach kurzer Zeit aus der aktiven Liste.
@@ -137,4 +137,4 @@ Prometheus-Daten in Grafana pruefen:
 
 ## Persoenliches Fazit
 
-Durch Prometheus und CAdvisor wird sichtbar, ob die Container nicht nur starten, sondern auch im Betrieb gesund sind. Besonders hilfreich ist der einfache Alert-Test mit `docker compose stop cadvisor`, weil dadurch der Weg von einem technischen Problem ueber Prometheus bis in den Alertmanager nachvollziehbar demonstriert werden kann. Fuer Modul 321 zeigt das gut, dass Containerisierung nicht bei `docker compose up` endet, sondern auch Betrieb, Beobachtbarkeit und reproduzierbare Tests umfasst.
+Durch Prometheus und CAdvisor wird sichtbar, ob die Container nicht nur starten, sondern auch im Betrieb gesund sind. Besonders hilfreich ist der einfache Alert-Test mit `docker compose stop demo1`, weil dadurch der Weg von einem technischen Problem ueber Prometheus bis in den Alertmanager nachvollziehbar demonstriert werden kann. Fuer Modul 321 zeigt das gut, dass Containerisierung nicht bei `docker compose up` endet, sondern auch Betrieb, Beobachtbarkeit und reproduzierbare Tests umfasst.

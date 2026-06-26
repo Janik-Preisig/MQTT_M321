@@ -3,30 +3,27 @@ groups:
     rules:
       - alert: CAdvisorTargetDown
         expr: up{job="cadvisor"} == 0
-        for: 30s
+        for: 1m
         labels:
           severity: critical
         annotations:
           summary: "CAdvisor ist nicht erreichbar"
-          description: "Prometheus kann CAdvisor seit mindestens 30 Sekunden nicht scrapen. Container-Metriken fehlen."
+          description: "Prometheus kann CAdvisor seit mindestens 1 Minute nicht scrapen. Container-Metriken fehlen."
 
-      - alert: PrometheusTargetDown
-        expr: up == 0
-        for: 30s
+      - alert: NodeDown
+        expr: up{job="node-exporter-demo"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node ist down"
+          description: "Der Node {{ $labels.instance }} ist seit mindestens 1 Minute nicht erreichbar."
+
+      - alert: ContainerNotResponding
+        expr: time() - container_last_seen{job="cadvisor", id!="/"} > 60
+        for: 0s
         labels:
           severity: warning
         annotations:
-          summary: "Prometheus Target ist down"
-          description: "Das Target {{ $labels.job }} / {{ $labels.instance }} ist seit mindestens 30 Sekunden nicht erreichbar."
-
-      - alert: ContainerHighCpuUsage
-        expr: |
-          sum by (id) (
-            rate(container_cpu_usage_seconds_total{id!="/"}[2m])
-          ) > 0.80
-        for: 2m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Hohe CPU-Auslastung im Container"
-          description: "Container oder CGroup {{ $labels.id }} nutzt seit mindestens 2 Minuten mehr als 80 Prozent eines CPU-Kerns."
+          summary: "Container reagiert nicht"
+          description: "Container oder CGroup {{ $labels.id }} wurde seit mehr als 1 Minute nicht mehr von CAdvisor gesehen."
